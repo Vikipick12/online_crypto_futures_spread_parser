@@ -41,8 +41,7 @@ UAINVEST Arbitrage Notifier Bot v1.1
 
 1. Клонуй репозиторій:
    ```bash
-   git clone https://github.com/your-username/uainvest-arb-bot.git
-   cd uainvest-arb-bot
+   git clone https://github.com/Vikipick12/online_crypto_futures_spread_parser
    ````
 
 2. Встанови залежності:
