@@ -1,13 +1,12 @@
 import requests 
-from bs4 import BeautifulSoup
 import json
 from dotenv import load_dotenv
-import os
+from os import getenv
 import time
 
 load_dotenv()
-TG_TOKEN = os.getenv("TG_access_token")
-TG_CHAT_ID = os.getenv("chat_id")
+TG_TOKEN = getenv("TG_access_token")
+TG_CHAT_ID = getenv("chat_id")
 
 last_sent_message = None
 
@@ -22,11 +21,16 @@ def fetch_arb_opportunities():
         "exchanges": "mexc_gate"
         }
     
-    response = requests.get(url=url, headers=headers, params=payload)
-    data = response.json()
-    
+    try:
+        response = requests.get(url=url, headers=headers, params=payload)
+        data = response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Виникла помилка о {time.strftime('%b %d %H:%M:%S')}:\n{e}")
+        data = {"data": []}
+
     # with open("data.json", "w", encoding="utf-8") as file:
     #     json.dump(data, file, indent=4)
+
     return data
     
 
@@ -36,16 +40,19 @@ def filter_opportunities(min_spread_threshold):
     filtered_opps = []
 
     for opportunity in data["data"]:
-        spread = opportunity.get("open_spread_percentage")
-        if spread >= min_spread_threshold:
-            filtered_opps.append({
-                "ticker": opportunity["symbol"],
-                "long": opportunity["long"],
-                "short": opportunity["short"],
-                "spread": opportunity["open_spread_percentage"],
-                f"{opportunity["long_item"]["exchange"]}_volume": opportunity["long_item"]["24usdt"],
-                f"{opportunity["short_item"]["exchange"]}_volume": opportunity["short_item"]["24usdt"]       
-            })
+        try:
+            spread = opportunity.get("open_spread_percentage")
+            if spread >= min_spread_threshold:
+                filtered_opps.append({
+                    "ticker": opportunity["symbol"],
+                    "long": opportunity["long"],
+                    "short": opportunity["short"],
+                    "spread": opportunity["open_spread_percentage"],
+                    f"{opportunity["long_item"]["exchange"]}_volume": opportunity["long_item"]["24usdt"],
+                    f"{opportunity["short_item"]["exchange"]}_volume": opportunity["short_item"]["24usdt"]       
+                })
+        except KeyError:
+            continue
 
     # with open("filtered_data.json", "w", encoding="utf-8") as file_2:
     #     json.dump(filtered_opps, file_2, indent=4)
@@ -88,8 +95,11 @@ def send_telegram_message(opps):
 
 
 def main(spread=1):
-    while True:
-        filter_opportunities(min_spread_threshold=spread)
-        time.sleep(5)
+    try:
+        while True:
+            filter_opportunities(min_spread_threshold=spread)
+            time.sleep(15)
+    except KeyboardInterrupt:
+        print("Exit")
 
 main(3)
